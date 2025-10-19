@@ -1,5 +1,5 @@
 import { Delete, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function Calculator() {
   // Hiển thị kết quả hoặc dữ liệu nhập
@@ -134,6 +134,60 @@ function Calculator() {
       }
     }
   };
+
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      const key = event.key;
+
+      // Số (0-9)
+      if (key >= "0" && key <= "9") {
+        event.preventDefault();
+        handleInputNumber(key);
+      }
+      // Dấu chấm
+      else if (key === ".") {
+        event.preventDefault();
+        handleInputNumber(".");
+      }
+      // Phép toán
+      else if (key === "+") {
+        event.preventDefault();
+        handleCalculationDisplay("+");
+      } else if (key === "-") {
+        event.preventDefault();
+        handleCalculationDisplay("-");
+      } else if (key === "*") {
+        event.preventDefault();
+        handleCalculationDisplay("x");
+      } else if (key === "/") {
+        event.preventDefault();
+        handleCalculationDisplay("÷");
+      }
+      // Bằng
+      else if (key === "Enter" || key === "=") {
+        event.preventDefault();
+        handleCalculationDisplay("=");
+      }
+      // Xóa ký tự cuối
+      else if (key === "Backspace") {
+        event.preventDefault();
+        handleDeleteInput();
+      }
+      // Xóa tất cả
+      else if (key === "Escape") {
+        event.preventDefault();
+        handleClearAll();
+      }
+      // Phần trăm
+      else if (key === "%") {
+        event.preventDefault();
+        handleSpecialCalculation("percentage");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [display, calculation, newCalculation]);
 
   return (
     <div className="bg-black text-white w-4/5 md:w-1/2 lg:w-1/3 h-auto p-8 rounded-2xl flex flex-col items-center gap-6 border border-gray-400 shadow-lg">
