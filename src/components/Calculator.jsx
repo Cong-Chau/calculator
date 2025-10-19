@@ -1,5 +1,6 @@
 import { Delete, X } from "lucide-react";
 import { useState } from "react";
+
 function Calculator() {
   // Hiển thị kết quả hoặc dữ liệu nhập
   const [display, setDisplay] = useState("0");
@@ -7,9 +8,18 @@ function Calculator() {
   const [calculation, setCalculation] = useState("");
   // Kết quả của phép tính
   const [result, setResult] = useState(null);
+  // Phép toán mới
+  const [newCalculation, setNewCalculation] = useState(false);
+  const [previousResult, setPreviousResult] = useState(null);
+
   // Xử lý nhập
   // Nhập số
   const handleInputNumber = (number) => {
+    if (newCalculation) {
+      setDisplay(number);
+      setNewCalculation(false);
+      return;
+    }
     if (display === "0") {
       if (number === ".") {
         setDisplay("0.");
@@ -42,35 +52,89 @@ function Calculator() {
     setResult(null);
   };
 
+  const safeCalculate = (expression) => {
+    try {
+      const sanitized = expression
+        .replace(/x/g, "*")
+        .replace(/÷/g, "/")
+        .replace(/√/g, "Math.sqrt")
+        .replace(/\^/g, "**");
+
+      const computed = eval(sanitized);
+      return isNaN(computed) ? 0 : computed;
+    } catch (err) {
+      console.error("Calculation error:", err);
+      return 0;
+    }
+  };
+
   // Xử lý hiển thị toàn bộ phép tính
   const handleCalculationDisplay = (operation) => {
-    if (calculation === "") {
-      console.log("chia if");
-      setCalculation(display + " " + operation);
-      setDisplay("0");
-    } else {
-      console.log("chia else");
+    const expression =
+      calculation === "" ? display : `${calculation} ${display}`;
 
-      setCalculation(calculation + " " + display + " " + operation);
-      setDisplay("0");
+    const computed = safeCalculate(expression);
+
+    setResult(computed);
+    if (operation === "=") {
+      setCalculation("");
+      setDisplay(String(computed));
+      setPreviousResult(computed);
+      setNewCalculation(true);
+      return;
     }
+    setCalculation(String(computed) + " " + operation);
+    setDisplay("0");
   };
 
-  // Xử lý phép tính đặc biệt
   const handleSpecialCalculation = (operation) => {
+    const currentValue = Number.parseFloat(display);
+
     if (operation === "percentage") {
-      const percentageValue = `1/(${calculation})`;
-      setCalculation(percentageValue);
+      if (calculation !== "") {
+        const parts = calculation.trim().split(" ");
+        const baseValue = Number.parseFloat(parts[0]);
+        const operator = parts[1];
+
+        if (operator === "+") {
+          const percentValue = (currentValue / 100) * baseValue;
+          setDisplay(String(baseValue + percentValue));
+        } else if (operator === "-") {
+          const percentValue = (currentValue / 100) * baseValue;
+          setDisplay(String(baseValue - percentValue));
+        } else if (operator === "x" || operator === "*") {
+          const percentValue = (currentValue / 100) * baseValue;
+          setDisplay(String(percentValue));
+        } else if (operator === "÷" || operator === "/") {
+          const percentValue = (currentValue / 100) * baseValue;
+          setDisplay(String(baseValue / percentValue));
+        }
+      } else {
+        setDisplay(String(currentValue / 100));
+      }
     }
+
+    if (operation === "reciprocal") {
+      if (currentValue === 0) {
+        setDisplay("Error");
+      } else {
+        setDisplay(String(1 / currentValue));
+      }
+    }
+
     if (operation === "square") {
-      const squareValue = `(${calculation})^2`;
-      setCalculation(squareValue);
+      setDisplay(String(currentValue * currentValue));
     }
+
     if (operation === "sqrt") {
-      const sqrtValue = `√(${calculation})`;
-      setCalculation(sqrtValue);
+      if (currentValue < 0) {
+        setDisplay("Error");
+      } else {
+        setDisplay(String(Math.sqrt(currentValue)));
+      }
     }
   };
+
   return (
     <div className="bg-black text-white w-4/5 md:w-1/2 lg:w-1/3 h-auto p-8 rounded-2xl flex flex-col items-center gap-6 border border-gray-400 shadow-lg">
       {/* Header */}
@@ -93,7 +157,10 @@ function Calculator() {
       {/* Chức năng thao tác */}
       <div className="w-full grid grid-cols-4 gap-4">
         {/* Hàng 1 */}
-        <button className="bg-gray-700 border-gray-700 py-2 border rounded-[7px] hover:opacity-80">
+        <button
+          onClick={() => handleSpecialCalculation("percentage")}
+          className="bg-gray-700 border-gray-700 py-2 border rounded-[7px] hover:opacity-80"
+        >
           <p className="text-center">%</p>
         </button>
         <button
@@ -116,7 +183,7 @@ function Calculator() {
         </button>
         {/* Hàng 2 */}
         <button
-          onClick={() => handleSpecialCalculation("percentage")}
+          onClick={() => handleSpecialCalculation("reciprocal")}
           className="bg-gray-700 border-gray-700 py-2 border rounded-[7px] hover:opacity-80"
         >
           <p className="text-center">1/x</p>
@@ -215,7 +282,15 @@ function Calculator() {
           <p className="text-center">+</p>
         </button>
         {/* Hàng 6 */}
-        <button className="py-2 border rounded-[7px]  hover:bg-white hover:text-black">
+        <button
+          onClick={() => {
+            if (previousResult !== null) {
+              setDisplay(String(previousResult));
+              setNewCalculation(true);
+            }
+          }}
+          className="py-2 border rounded-[7px]  hover:bg-white hover:text-black"
+        >
           <p className="text-center">Ans</p>
         </button>
         <button
@@ -230,7 +305,10 @@ function Calculator() {
         >
           <p className="text-center">.</p>
         </button>
-        <button className="bg-amber-800 py-2 border rounded-[7px] border-amber-800 hover:opacity-80">
+        <button
+          onClick={() => handleCalculationDisplay("=")}
+          className="bg-orange-500 py-2 border rounded-[7px] border-orange-500 hover:opacity-80"
+        >
           <p className="text-center font-bold">=</p>
         </button>
       </div>
